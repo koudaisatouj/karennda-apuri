@@ -1,65 +1,88 @@
-﻿import React, { useState } from "react";
+// src/pages/AccountEditPage.jsx
+import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 
-function RegisterPage() {
-  const [username, setUsername] = useState("");
+function AccountEditPage({ currentUserName, setCurrentUserName }) {
+  const [name, setName] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
 
   const navigate = useNavigate();
 
-  const handleRegister = (e) => {
+  useEffect(() => {
+    const accounts = JSON.parse(localStorage.getItem("accounts") || "[]");
+    const current = accounts.find((acc) => acc.name === currentUserName);
+
+    if (!current) {
+      alert("ユーザー情報が見つかりません。ログインし直してください。");
+      navigate("/");
+      return;
+    }
+
+    setName(current.name || "");
+    setBirthDate(current.birthDate || "");
+    setEmail(current.email || "");
+    setPhone(current.phone || "");
+    setPassword(current.password || "");
+  }, [currentUserName, navigate]);
+
+  const handleSave = (e) => {
     e.preventDefault();
 
-    if (!username || !birthDate || !email || !phone || !password || !confirmPassword) {
+    if (!name || !birthDate || !email || !phone || !password) {
       alert("すべての項目を入力してください");
       return;
     }
 
-    if (password !== confirmPassword) {
-      alert("パスワードが一致しません");
-      return;
-    }
+    const accounts = JSON.parse(localStorage.getItem("accounts") || "[]");
 
-    const existingAccounts = JSON.parse(localStorage.getItem("accounts") || "[]");
-
-    const isDuplicate = existingAccounts.some(
-      (account) => account.email === email || account.username === username
+    const isEmailUsedByOther = accounts.some(
+      (acc) => acc.email === email && acc.name !== currentUserName
     );
-    if (isDuplicate) {
-      alert("このメールアドレスまたはユーザー名は既に登録されています");
+    if (isEmailUsedByOther) {
+      alert("このメールアドレスは他のアカウントで使用されています");
       return;
     }
 
-    const newAccount = {
-      username,
-      birthDate,
-      email,
-      phone,
-      password,
-    };
+    const newAccounts = accounts.map((acc) => {
+      if (acc.name === currentUserName) {
+        return {
+          ...acc,
+          name,
+          birthDate,
+          email,
+          phone,
+          password,
+        };
+      }
+      return acc;
+    });
 
-    existingAccounts.push(newAccount);
-    localStorage.setItem("accounts", JSON.stringify(existingAccounts));
+    localStorage.setItem("accounts", JSON.stringify(newAccounts));
 
-    alert("登録が完了しました。ログインしてください。");
-    navigate("/");
+    if (setCurrentUserName) {
+      setCurrentUserName(name);
+      localStorage.setItem("currentUserName", name);
+      localStorage.setItem("currentUserPassword", password);
+    }
+
+    alert("ユーザー情報を更新しました");
+    navigate("/menu");
   };
 
   return (
     <div style={{ padding: "20px", maxWidth: "400px", margin: "0 auto" }}>
-      <h1>新規登録</h1>
-      <form onSubmit={handleRegister}>
+      <h1>ユーザー情報の変更</h1>
+      <form onSubmit={handleSave}>
         <div style={{ marginBottom: "10px" }}>
           <label>
-            ユーザー名:
+            名前:
             <input
               type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               style={{ width: "100%", padding: "8px", marginTop: "5px" }}
             />
           </label>
@@ -113,18 +136,6 @@ function RegisterPage() {
           </label>
         </div>
 
-        <div style={{ marginBottom: "10px" }}>
-          <label>
-            パスワード（確認）:
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              style={{ width: "100%", padding: "8px", marginTop: "5px" }}
-            />
-          </label>
-        </div>
-
         <button
           type="submit"
           style={{
@@ -137,15 +148,16 @@ function RegisterPage() {
             cursor: "pointer",
           }}
         >
-          登録
+          保存
         </button>
       </form>
 
       <p style={{ marginTop: "20px", textAlign: "center" }}>
-        <Link to="/">ログインページに戻る</Link>
+        <Link to="/menu">メニューに戻る</Link>
       </p>
     </div>
   );
 }
 
-export default RegisterPage;
+
+export default AccountEditPage;

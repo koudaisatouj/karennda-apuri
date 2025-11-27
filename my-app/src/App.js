@@ -8,12 +8,13 @@ import MenuPage from "./pages/MenuPage";
 import SellReservePage from "./pages/SellReservePage";
 import BuyReservePage from "./pages/BuyReservePage";
 import CancelPage from "./pages/CancelPage";
+import AccountEditPage from "./pages/AccountEditPage";
 
 function App() {
-  // 簡易的な「ログイン中ユーザー名」
+  // ????????????????
   const [currentUserName, setCurrentUserName] = useState("");
 
-  // 全予約データ（本当はサーバーやFirestoreに保存する）
+  // ???????????????Firestore??????
   const [reservations, setReservations] = useState([]);
 
   const handleAddReservation = (newReservation) => {
@@ -34,7 +35,13 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route
           path="/menu"
-          element={<MenuPage currentUserName={currentUserName} />}
+          element={
+            <MenuPage
+              currentUserName={currentUserName}
+              setCurrentUserName={setCurrentUserName}
+              reservations={reservations}
+            />
+          }
         />
         <Route
           path="/reserve/sell"
@@ -62,6 +69,15 @@ function App() {
               currentUserName={currentUserName}
               reservations={reservations}
               onCancelReservation={handleCancelReservation}
+            />
+          }
+        />
+                <Route
+          path="/account/edit"
+          element={
+            <AccountEditPage
+              currentUserName={currentUserName}
+              setCurrentUserName={setCurrentUserName}
             />
           }
         />
