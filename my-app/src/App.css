@@ -2,14 +2,11 @@
   min-height: 100vh;
 
   /* ここに背景画像を設定する */
-  background-image: url('./background.png');  /* src/App.css から見て同階層 */
-  background-size: contain;
+  background-image: url('./background.png');  
   background-repeat: no-repeat;
   background-position: center;
-  
+  background-size: contain;
 
-  /* もしグラデーション背景が書いてあったら削除 or コメントアウト */
-  /* background: linear-gradient(...); ← こういうのがあれば消す */
 }
 
 /* オーバーレイを App に付けたい場合 */
@@ -21,3 +18,12 @@
   z-index: -1;
   pointer-events: none;
 }
+
+/* 入力系を半透明にして背景をうっすら透けさせる */
+input,
+select,
+textarea {
+  background-color: rgba(255, 255, 255, 0.7);
+}
+
+

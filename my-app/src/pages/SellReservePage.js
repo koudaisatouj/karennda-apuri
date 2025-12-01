@@ -1,69 +1,28 @@
-﻿import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import bgImage from "../background.png"; 
+import {
+  DAY_RANGE,
+  TEXT,
+  backgroundStyle,
+  panelStyle,
+  toLocalYmd,
+  parseYmd,
+  isWithinRange,
+} from "./sellReserveUtils";
 
-const DAY_RANGE = 40;
-const TEXT = {
-  title: "買取予約",
-  select: "選択してください",
-  date: "日付:",
-  time: "時間:",
-  rangePrefix: "予約できる期間: ",
-  required: "すべての項目を入力してください",
-  rangeAlert: "予約できる期間は本日から40日先までです",
-  submit: "予約する",
-  cancel: "キャンセル",
-  completed: "買取予約が完了しました",
-  titleLabel: "タイトル:",
-  quantityLabel: "枚数:",
-  priceLabel: "希望金額:",  
-  bookedNote:
-    "注意: このタイトルは既に予約済みの時間枠があります。1タイトルにつき1枠まで予約可能です。",
-};
-
-const backgroundStyle = {
-  minHeight: "100vh",
+const fieldStyle = {
   width: "100%",
-  padding: "24px",
-  backgroundImage: `url(${bgImage})`,
-  backgroundSize: "cover",
-  backgroundRepeat: "no-repeat",
-  backgroundPosition: "center",
+  padding: "12px",
+  borderRadius: "8px",
+  border: "1px solid #d1d5db",
+  fontSize: "15px",
+  boxSizing: "border-box",
+  backgroundColor: "rgba(255,255,255,0.9)",
 };
 
-const panelStyle = {
-  background: "rgba(255,255,255,0.94)",
-  borderRadius: "12px",
-  boxShadow: "0 12px 32px rgba(0,0,0,0.25)",
-  padding: "20px",
-  maxWidth: "520px",
-  margin: "0 auto",
-};
+const fieldBlockStyle = { display: "flex", flexDirection: "column", gap: "6px" };
 
-const toLocalYmd = (date) => {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-};
-
-const parseYmd = (value) => {
-  if (!value) return null;
-  const [y, m, d] = value.split("-").map(Number);
-  if (!y || !m || !d) return null;
-  const dt = new Date(y, m - 1, d);
-  return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d
-    ? dt
-    : null;
-};
-
-const isWithinRange = (ymd, startDate, endDate) => {
-  const dt = parseYmd(ymd);
-  if (!dt) return false;
-  return dt >= startDate && dt <= endDate;
-};
-
-function SellReservePage({ currentUserName, reservations, onAddReservation }) {
+function SellReservePage({ currentUserName, reservations = [], onAddReservation, holidays = [] }) {
   const [cardName, setCardName] = useState("");
   const [quantity, setQuantity] = useState("");
   const [date, setDate] = useState("");
@@ -102,37 +61,44 @@ function SellReservePage({ currentUserName, reservations, onAddReservation }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (cardName && quantity && date && time) {
-      if (!isWithinRange(date, today, endDate)) {
-        alert(TEXT.rangeAlert);
-        return;
-      }
-
-      const existingReservation = reservations.find(
-        (r) => r.type === "sell" && r.cardName === cardName && r.date === date && r.userName === currentUserName
-      );
-
-      if (existingReservation) {
-        alert("このタイトルは既に予約済みです。1タイトルにつき1枠まで予約可能です。");
-        return;
-      }
-
-      const newReservation = {
-        id: Date.now(),
-        type: "sell",
-        userName: currentUserName,
-        cardName,
-        price: parseFloat(quantity),
-        quantity: parseFloat(quantity),
-        date,
-        time,
-      };
-      onAddReservation(newReservation);
-      alert(TEXT.completed);
-      navigate("/menu");
-    } else {
+    if (!(cardName && quantity && date && time)) {
       alert(TEXT.required);
+      return;
     }
+    if (!isWithinRange(date, today, endDate)) {
+      alert(TEXT.rangeAlert);
+      return;
+    }
+    if (holidays.includes(date)) {
+      alert("選択した日は休日のため予約できません");
+      return;
+    }
+    const existingReservation = reservations.find(
+      (r) =>
+        r.type === "sell" &&
+        r.cardName === cardName &&
+        r.date === date &&
+        r.userName === currentUserName
+    );
+    if (existingReservation) {
+      alert("このタイトルは既に予約済みです。1タイトルにつき1枠まで予約可能です。");
+      return;
+    }
+
+    const newReservation = {
+      id: Date.now(),
+      type: "sell",
+      userName: currentUserName,
+      cardName,
+      price: parseFloat(price) || 0,
+      quantity: Number(quantity),
+      date,
+      time,
+      status: "予約済み",
+    };
+    onAddReservation(newReservation);
+    alert(TEXT.completed);
+    navigate("/menu");
   };
 
   const minDate = toLocalYmd(today);
@@ -146,15 +112,16 @@ function SellReservePage({ currentUserName, reservations, onAddReservation }) {
           {TEXT.rangePrefix}
           {minDate} 〜 {maxDate}
         </p>
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: "15px" }}>
-            <label style={{ display: "block", color: "#0f1b35", marginBottom: "4px" }}>
-              {TEXT.titleLabel}
-            </label>
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: "flex", flexDirection: "column", gap: "14px" }}
+        >
+          <div style={fieldBlockStyle}>
+            <label style={{ color: "#0f1b35" }}>{TEXT.titleLabel}</label>
             <select
               value={cardName}
               onChange={(e) => setCardName(e.target.value)}
-              style={{ width: "100%", padding: "10px", marginTop: "2px", borderRadius: "6px" }}
+              style={{ ...fieldStyle }}
             >
               <option value="">{TEXT.select}</option>
               <option value="遊戯王">遊戯王</option>
@@ -162,14 +129,13 @@ function SellReservePage({ currentUserName, reservations, onAddReservation }) {
               <option value="デュエルマスターズ">デュエルマスターズ</option>
             </select>
           </div>
-          <div style={{ marginBottom: "15px" }}>
-            <label style={{ display: "block", color: "#0f1b35", marginBottom: "4px" }}>
-              {TEXT.quantityLabel}
-            </label>
+
+          <div style={fieldBlockStyle}>
+            <label style={{ color: "#0f1b35" }}>{TEXT.quantityLabel}</label>
             <select
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
-              style={{ width: "100%", padding: "10px", marginTop: "2px", borderRadius: "6px" }}
+              style={{ ...fieldStyle }}
             >
               <option value="">{TEXT.select}</option>
               <option value="500">~500枚</option>
@@ -180,42 +146,46 @@ function SellReservePage({ currentUserName, reservations, onAddReservation }) {
               <option value="3000">3000~</option>
             </select>
           </div>
-          <div style={{ marginBottom: "15px" }}>
-        <label style={{ display: "block", color: "#0f1b35", marginBottom: "4px" }}>
-          {TEXT.priceLabel}
-        </label>
-        <input
-          type="number"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #d1d5db" }}
-          placeholder="例: 5000"
-        />
-      </div>
-          <div style={{ marginBottom: "15px" }}>
-            <label style={{ display: "block", color: "#0f1b35", marginBottom: "4px" }}>
-              {TEXT.date}
-            </label>
+
+          <div style={fieldBlockStyle}>
+            <label style={{ color: "#0f1b35" }}>{TEXT.priceLabel}</label>
+            <input
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              style={{ ...fieldStyle }}
+              placeholder="例: 5000"
+            />
+          </div>
+
+          <div style={fieldBlockStyle}>
+            <label style={{ color: "#0f1b35" }}>{TEXT.date}</label>
             <input
               type="date"
               value={date}
               min={minDate}
               max={maxDate}
               onChange={(e) => {
-                setDate(e.target.value);
+                const value = e.target.value;
+                if (holidays.includes(value)) {
+                  alert("選択した日は休日のため予約できません");
+                  setDate("");
+                  setTime("");
+                  return;
+                }
+                setDate(value);
                 setTime("");
               }}
-              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #d1d5db" }}
+              style={{ ...fieldStyle }}
             />
           </div>
-          <div style={{ marginBottom: "15px" }}>
-            <label style={{ display: "block", color: "#0f1b35", marginBottom: "4px" }}>
-              {TEXT.time}
-            </label>
+
+          <div style={fieldBlockStyle}>
+            <label style={{ color: "#0f1b35" }}>{TEXT.time}</label>
             <select
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              style={{ width: "100%", padding: "10px", marginTop: "2px", borderRadius: "6px" }}
+              style={{ ...fieldStyle }}
               disabled={!cardName || !date}
             >
               <option value="">
@@ -238,10 +208,8 @@ function SellReservePage({ currentUserName, reservations, onAddReservation }) {
                 );
               })}
             </select>
-            {cardName && date && bookedTimeSlots.length > 0 && (
-              <p style={{ fontSize: "12px", color: "#666", marginTop: "5px" }}>{TEXT.bookedNote}</p>
-            )}
           </div>
+
           <div style={{ display: "flex", gap: "10px" }}>
             <button
               type="submit"
@@ -251,8 +219,9 @@ function SellReservePage({ currentUserName, reservations, onAddReservation }) {
                 backgroundColor: "#28a745",
                 color: "white",
                 border: "none",
-                borderRadius: "6px",
+                borderRadius: "8px",
                 cursor: "pointer",
+                fontSize: "15px",
               }}
             >
               {TEXT.submit}
@@ -266,13 +235,15 @@ function SellReservePage({ currentUserName, reservations, onAddReservation }) {
                 backgroundColor: "#6c757d",
                 color: "white",
                 border: "none",
-                borderRadius: "6px",
+                borderRadius: "8px",
                 cursor: "pointer",
+                fontSize: "15px",
               }}
             >
               {TEXT.cancel}
             </button>
           </div>
+          <p style={{ marginTop: "10px", fontSize: "12px", color: "#555" }}>{TEXT.bookedNote}</p>
         </form>
       </div>
     </div>

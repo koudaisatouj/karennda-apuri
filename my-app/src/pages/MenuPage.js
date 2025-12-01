@@ -1,31 +1,27 @@
 ﻿import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import bgImage from "../background.png";
-
 const DAY_RANGE = 40;
 const WEEK_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 const TEXT = {
-  title: "メニュー",
-  welcome: "ようこそ、",
+  title: "予約メニュー",
+  welcome: "いらっしゃいませ、",
   sell: "買取予約",
   buy: "購入予約",
-  cancel: "予約キャンセル",
   logout: "ログアウト",
-  displayRange: "表示期間: ",
+  displayRange: "表示範囲: ",
   dayRangeSuffix: "（40日間）",
-  noteRange: "予約できる期間は本日から40日先までです。",
-  noPlan: "予定なし",
-  sellText: "売却",
+  noteRange: "予約できるのは今日から40日までです。",
+  noPlan: "予約なし",
+  sellText: "買取",
   buyText: "購入",
 };
-
 const toLocalYmd = (date) => {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 };
-
 const parseYmd = (value) => {
   if (!value) return null;
   const [y, m, d] = value.split("-").map(Number);
@@ -45,7 +41,10 @@ const isWithinRange = (ymd, startDate, endDate) => {
 const backgroundStyle = {
   minHeight: "100vh",
   width: "100%",
-  padding: "24px",
+  padding: "32px 20px",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
   backgroundImage: `url(${bgImage})`,
   backgroundSize: "cover",
   backgroundRepeat: "no-repeat",
@@ -58,7 +57,14 @@ const panelStyle = {
   boxShadow: "0 12px 32px rgba(0,0,0,0.25)",
 };
 
-function MenuPage({ currentUserName, setCurrentUserName, reservations = [] }) {
+function MenuPage({
+  currentUserName,
+  setCurrentUserName,
+  reservations = [],
+  onDeleteUserReservations,
+  holidays = [],
+  products = [],
+}) {
   const navigate = useNavigate();
   const [viewDate] = useState(() => new Date());
 
@@ -144,9 +150,13 @@ function MenuPage({ currentUserName, setCurrentUserName, reservations = [] }) {
 
     const accounts = JSON.parse(localStorage.getItem("accounts") || "[]");
     const newAccounts = accounts.filter(
-      (acc) => !(acc.name === currentName && acc.password === currentPassword)
+      (acc) => !(acc.username === currentName && acc.password === currentPassword)
     );
     localStorage.setItem("accounts", JSON.stringify(newAccounts));
+
+    if (onDeleteUserReservations) {
+      onDeleteUserReservations(currentName);
+    }
 
     localStorage.removeItem("currentUserName");
     localStorage.removeItem("currentUserPassword");
@@ -160,10 +170,25 @@ function MenuPage({ currentUserName, setCurrentUserName, reservations = [] }) {
     navigate("/");
   };
 
+  const handleDayClick = (dateStr, hasItems) => {
+    if (hasItems) {
+      navigate(`/reservations?date=${encodeURIComponent(dateStr)}`);
+    }
+  };
+
   return (
     <div style={backgroundStyle}>
-      <div style={{ maxWidth: "1050px", margin: "0 auto" }}>
-        <div style={{ ...panelStyle, padding: "20px", marginBottom: "20px" }}>
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "1050px",
+          margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: "18px",
+        }}
+      >
+        <div style={{ ...panelStyle, padding: "22px" }}>
           <h1 style={{ margin: "0 0 8px", color: "#0f1b35" }}>{TEXT.title}</h1>
           <p style={{ margin: 0, color: "#0f1b35" }}>
             {TEXT.welcome}
@@ -175,7 +200,6 @@ function MenuPage({ currentUserName, setCurrentUserName, reservations = [] }) {
           style={{
             ...panelStyle,
             padding: "20px",
-            marginBottom: "24px",
             display: "grid",
             gap: "10px",
             gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
@@ -211,39 +235,9 @@ function MenuPage({ currentUserName, setCurrentUserName, reservations = [] }) {
           >
             {TEXT.buy}
           </button>
-          <button
-            onClick={() => navigate("/reserve/cancel")}
-            style={{
-              padding: "15px",
-              backgroundColor: "#dc3545",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontSize: "16px",
-              boxShadow: "0 8px 18px rgba(0,0,0,0.12)",
-            }}
-          >
-            {TEXT.cancel}
-          </button>
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: "15px",
-              backgroundColor: "#6c757d",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontSize: "16px",
-              boxShadow: "0 8px 18px rgba(0,0,0,0.12)",
-            }}
-          >
-            {TEXT.logout}
-          </button>
         </div>
 
-        <div style={{ ...panelStyle, padding: "16px" }}>
+        <div style={{ ...panelStyle, padding: "18px" }}>
           <div style={{ marginBottom: "12px", fontWeight: "bold", color: "#0f1b35" }}>
             {TEXT.displayRange}
             {toLocalYmd(today)} 〜 {toLocalYmd(endDate)}
@@ -276,43 +270,55 @@ function MenuPage({ currentUserName, setCurrentUserName, reservations = [] }) {
                     }
                     const dateStr = toLocalYmd(day);
                     const items = reservationsByDate[dateStr] || [];
+                    const isHoliday = holidays.includes(dateStr);
+                    const dayOfWeek = day.getDay();
+                    const baseBgColor = isHoliday
+                      ? "#e6e6e6"
+                      : dayOfWeek === 0
+                      ? "#ffeaea"
+                      : dayOfWeek === 6
+                      ? "#e3f2fd"
+                      : items.length
+                      ? "#fffdf5"
+                      : "white";
+                    const dayColor = isHoliday
+                      ? "#555"
+                      : dayOfWeek === 0
+                      ? "#c62828"
+                      : dayOfWeek === 6
+                      ? "#1565c0"
+                      : "#0f1b35";
                     return (
                       <td
                         key={dateStr}
+                        onClick={() => handleDayClick(dateStr, items.length > 0)}
                         style={{
                           border: "1px solid #f0f0f0",
                           verticalAlign: "top",
                           padding: "6px",
-                          backgroundColor: items.length ? "#fffdf5" : "white",
+                          backgroundColor: baseBgColor,
                           height: "110px",
+                          cursor: items.length ? "pointer" : "default",
                         }}
                       >
-                        <div style={{ fontWeight: "bold", marginBottom: "4px", color: "#0f1b35" }}>
+                        <div style={{ fontWeight: "bold", marginBottom: "4px", color: dayColor }}>
                           {day.getDate()}
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                          {items.map((r) => (
+                          {items.length ? (
                             <div
-                              key={r.id}
                               style={{
                                 fontSize: "12px",
-                                padding: "4px 6px",
+                                padding: "6px 8px",
                                 borderRadius: "4px",
-                                backgroundColor: r.type === "sell" ? "#e8f5e9" : "#e3f2fd",
-                                border: "1px solid #e0e0e0",
+                                backgroundColor: "#e8f5e9",
+                                border: "1px solid #bcd5c2",
+                                color: "#0f5132",
                               }}
                             >
-                              <div style={{ fontWeight: "bold" }}>
-                                {r.type === "sell" ? TEXT.sellText : TEXT.buyText} / {r.cardName}
-                              </div>
-                              <div>
-                                {r.time && `${r.time} `}
-                                {r.type === "sell" && r.quantity && `${r.quantity}枚 `}
-                                {r.price && `¥${Number(r.price).toLocaleString()}`}
-                              </div>
+                              予約あり（{items.length}件）
                             </div>
-                          ))}
-                          {!items.length && (
+                          ) : (
                             <div style={{ fontSize: "12px", color: "#aaa" }}>{TEXT.noPlan}</div>
                           )}
                         </div>
@@ -325,33 +331,61 @@ function MenuPage({ currentUserName, setCurrentUserName, reservations = [] }) {
           </table>
           <p style={{ marginTop: "8px", fontSize: "12px", color: "#555" }}>{TEXT.noteRange}</p>
         </div>
-        <div style={{ ...panelStyle, padding: "16px", marginTop: "16px" }}>
+        <div style={{ ...panelStyle, padding: "16px", marginTop: "4px" }}>
           <h2 style={{ margin: "0 0 12px", color: "#0f1b35", fontSize: "18px" }}>
             アカウント設定
           </h2>
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "flex-start",
+              maxWidth: "520px",
+            }}
+          >
             <button
               onClick={() => navigate("/account/edit")}
               style={{
-                padding: "10px 16px",
+                padding: "12px 18px",
                 backgroundColor: "#007bff",
                 color: "white",
                 border: "none",
-                borderRadius: "6px",
+                borderRadius: "8px",
                 cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: 600,
               }}
             >
               ユーザー情報変更
             </button>
             <button
+              onClick={handleLogout}
+              style={{
+                padding: "12px 18px",
+                backgroundColor: "#6c757d",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: 600,
+              }}
+            >
+              ログアウト
+            </button>
+            <button
               onClick={handleDeleteAccount}
               style={{
-                padding: "10px 16px",
+                padding: "12px 18px",
                 backgroundColor: "#dc3545",
                 color: "white",
                 border: "none",
-                borderRadius: "6px",
+                borderRadius: "8px",
                 cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: 600,
               }}
             >
               アカウント削除
@@ -362,5 +396,4 @@ function MenuPage({ currentUserName, setCurrentUserName, reservations = [] }) {
     </div>
   );
 }
-
 export default MenuPage;

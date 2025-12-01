@@ -1,24 +1,33 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import bgImage from "../background.png";
-
 const backgroundStyle = {
   minHeight: "100vh",
   width: "100%",
   padding: "24px",
-  backgroundImage: `url(${bgImage})`,
+  backgroundImage: "url('/cards-hero.jpg')",
   backgroundSize: "cover",
   backgroundRepeat: "no-repeat",
   backgroundPosition: "center",
+  position: "relative",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+};
+
+const overlayStyle = {
+  position: "absolute",
+  inset: 0,
+  background: "linear-gradient(135deg, rgba(0,0,0,0.25), rgba(0,0,0,0.35))",
 };
 
 const panelStyle = {
-  background: "rgba(255,255,255,0.94)",
+  background: "rgba(255,255,255,0.85)",
   borderRadius: "12px",
   boxShadow: "0 12px 32px rgba(0,0,0,0.25)",
   padding: "20px",
   maxWidth: "900px",
   margin: "0 auto",
+  backdropFilter: "blur(6px)",
 };
 
 function CancelPage({ currentUserName, reservations, onCancelReservation }) {
@@ -35,6 +44,7 @@ function CancelPage({ currentUserName, reservations, onCancelReservation }) {
 
   return (
     <div style={backgroundStyle}>
+      <div style={overlayStyle} />
       <div style={panelStyle}>
         <h1 style={{ margin: "0 0 16px", color: "#0f1b35" }}>予約キャンセル</h1>
         {userReservations.length === 0 ? (
@@ -74,10 +84,13 @@ function CancelPage({ currentUserName, reservations, onCancelReservation }) {
 ) : (
   <>
     <div style={{ marginBottom: "8px" }}>
-      <strong>カード名:</strong> {reservation.cardName}
+      <strong>商品名:</strong> {reservation.cardName}
     </div>
     <div style={{ marginBottom: "8px" }}>
-      <strong>価格:</strong> ¥{reservation.price.toLocaleString()}
+      <strong>個数:</strong> {reservation.quantity}個
+    </div>
+    <div style={{ marginBottom: "8px" }}>
+      <strong>合計金額:</strong> ¥{(Number(reservation.price) * Number(reservation.quantity || 0)).toLocaleString()}
     </div>
   </>
 )}

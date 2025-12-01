@@ -1,6 +1,40 @@
-// src/pages/AccountEditPage.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import bgImage from "../background.png";
+
+const backgroundStyle = {
+  minHeight: "100vh",
+  width: "100%",
+  padding: "24px",
+  backgroundImage: `url(${bgImage})`,
+  backgroundSize: "cover",
+  backgroundRepeat: "no-repeat",
+  backgroundPosition: "center",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
+const panelStyle = {
+  background: "rgba(255,255,255,0.94)",
+  borderRadius: "12px",
+  boxShadow: "0 12px 32px rgba(0,0,0,0.25)",
+  padding: "24px",
+  width: "100%",
+  maxWidth: "460px",
+};
+
+const labelStyle = { color: "#111827", fontSize: "14px" };
+const inputStyle = {
+  width: "100%",
+  padding: "12px",
+  marginTop: "6px",
+  borderRadius: "8px",
+  border: "1px solid #d1d5db",
+  fontSize: "15px",
+  boxSizing: "border-box",
+  backgroundColor: "rgba(255,255,255,0.9)",
+};
 
 function AccountEditPage({ currentUserName, setCurrentUserName }) {
   const [name, setName] = useState("");
@@ -13,7 +47,9 @@ function AccountEditPage({ currentUserName, setCurrentUserName }) {
 
   useEffect(() => {
     const accounts = JSON.parse(localStorage.getItem("accounts") || "[]");
-    const current = accounts.find((acc) => acc.name === currentUserName);
+    const current = accounts.find(
+      (acc) => acc.username === currentUserName || acc.name === currentUserName
+    );
 
     if (!current) {
       alert("ユーザー情報が見つかりません。ログインし直してください。");
@@ -21,7 +57,7 @@ function AccountEditPage({ currentUserName, setCurrentUserName }) {
       return;
     }
 
-    setName(current.name || "");
+    setName(current.username || current.name || "");
     setBirthDate(current.birthDate || "");
     setEmail(current.email || "");
     setPhone(current.phone || "");
@@ -39,7 +75,7 @@ function AccountEditPage({ currentUserName, setCurrentUserName }) {
     const accounts = JSON.parse(localStorage.getItem("accounts") || "[]");
 
     const isEmailUsedByOther = accounts.some(
-      (acc) => acc.email === email && acc.name !== currentUserName
+      (acc) => acc.email === email && (acc.username || acc.name) !== currentUserName
     );
     if (isEmailUsedByOther) {
       alert("このメールアドレスは他のアカウントで使用されています");
@@ -47,9 +83,10 @@ function AccountEditPage({ currentUserName, setCurrentUserName }) {
     }
 
     const newAccounts = accounts.map((acc) => {
-      if (acc.name === currentUserName) {
+      if ((acc.username || acc.name) === currentUserName) {
         return {
           ...acc,
+          username: name,
           name,
           birthDate,
           email,
@@ -73,91 +110,89 @@ function AccountEditPage({ currentUserName, setCurrentUserName }) {
   };
 
   return (
-    <div style={{ padding: "20px", maxWidth: "400px", margin: "0 auto" }}>
-      <h1>ユーザー情報の変更</h1>
-      <form onSubmit={handleSave}>
-        <div style={{ marginBottom: "10px" }}>
-          <label>
-            名前:
+    <div style={backgroundStyle}>
+      <div style={panelStyle}>
+        <h1 style={{ textAlign: "center", marginBottom: "16px", color: "#111827" }}>
+          ユーザー情報の変更
+        </h1>
+        <form
+          onSubmit={handleSave}
+          style={{ display: "flex", flexDirection: "column", gap: "14px" }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={labelStyle}>名前 / ユーザー名</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              style={{ width: "100%", padding: "8px", marginTop: "5px" }}
+              style={inputStyle}
             />
-          </label>
-        </div>
+          </div>
 
-        <div style={{ marginBottom: "10px" }}>
-          <label>
-            生年月日:
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={labelStyle}>生年月日</label>
             <input
               type="date"
               value={birthDate}
               onChange={(e) => setBirthDate(e.target.value)}
-              style={{ width: "100%", padding: "8px", marginTop: "5px" }}
+              style={inputStyle}
             />
-          </label>
-        </div>
+          </div>
 
-        <div style={{ marginBottom: "10px" }}>
-          <label>
-            メールアドレス:
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={labelStyle}>メールアドレス</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              style={{ width: "100%", padding: "8px", marginTop: "5px" }}
+              style={inputStyle}
             />
-          </label>
-        </div>
+          </div>
 
-        <div style={{ marginBottom: "10px" }}>
-          <label>
-            電話番号:
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={labelStyle}>電話番号</label>
             <input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              style={{ width: "100%", padding: "8px", marginTop: "5px" }}
+              style={inputStyle}
             />
-          </label>
-        </div>
+          </div>
 
-        <div style={{ marginBottom: "10px" }}>
-          <label>
-            パスワード:
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={labelStyle}>パスワード</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              style={{ width: "100%", padding: "8px", marginTop: "5px" }}
+              style={inputStyle}
             />
-          </label>
-        </div>
+          </div>
 
-        <button
-          type="submit"
-          style={{
-            width: "100%",
-            padding: "10px",
-            backgroundColor: "#28a745",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-        >
-          保存
-        </button>
-      </form>
+          <button
+            type="submit"
+            style={{
+              width: "100%",
+              padding: "12px",
+              backgroundColor: "#28a745",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontWeight: "bold",
+              fontSize: "15px",
+            }}
+          >
+            保存
+          </button>
+        </form>
 
-      <p style={{ marginTop: "20px", textAlign: "center" }}>
-        <Link to="/menu">メニューに戻る</Link>
-      </p>
+        <p style={{ marginTop: "18px", textAlign: "center" }}>
+          <Link to="/menu">メニューに戻る</Link>
+        </p>
+      </div>
     </div>
   );
 }
-
 
 export default AccountEditPage;
