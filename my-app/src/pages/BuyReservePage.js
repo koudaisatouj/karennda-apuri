@@ -199,7 +199,7 @@ function BuyReservePage({
 
           <div style={fieldBlockStyle}>
             <label style={{ color: "#0f1b35", fontSize: "14px" }}>{TEXT.price}</label>
-            <input
+            <input //短歌
               type="number"
               value={price}
               readOnly
